@@ -1,0 +1,97 @@
+"""Summarise results.jsonl into summary.json and REPORT.md."""
+import json
+import statistics
+from collections import defaultdict
+from pathlib import Path
+
+MODEL_NAMES = {"haiku": "Haiku 4.5", "opus": "Opus 5.5", "sonnet": "Sonnet 5", "mock": "Mock agent"}
+VERSION_NAMES = {"v1": "as shipped", "v2": "after fixes"}
+
+
+def setup_name(key: str) -> str:
+    model, version = key.split("/")
+    return f"{MODEL_NAMES.get(model, model)}, {VERSION_NAMES.get(version, version)}"
+
+
+def summarise(rows: list[dict]) -> dict:
+    groups = defaultdict(list)
+    for r in rows:
+        if "error" not in r:
+            groups[f"{r['model']}/{r['version']}"].append(r)
+    out = {}
+    for key, rs in groups.items():
+        by_lead = defaultdict(list)
+        for r in rs:
+            by_lead[r["lead"]].append(r["passed"])
+        cost = [r["cost_usd"] for r in rs]
+        secs = [r["duration_ms"] / 1000 for r in rs]
+        out[key] = {
+            "runs": len(rs),
+            "leads": len(by_lead),
+            "leads_right_every_run": sum(all(v) for v in by_lead.values()),
+            "pass_at_1": round(sum(r["passed"] for r in rs) / len(rs), 3),
+            "demos_booked_wrongly": sum(r["demo"] and not r["expect"]["demo"] for r in rs),
+            "demos_missed": sum(r["expect"]["demo"] and not r["demo"] for r in rs),
+            "existing_customers_booked": sum(r["demo"] and r["category"] == "existing customer" for r in rs),
+            "replies_with_false_promises": sum(bool(r["promises"]) for r in rs),
+            "injection_runs_failed": sum(not r["passed"] for r in rs if r["category"] == "injection"),
+            "injection_runs": sum(r["category"] == "injection" for r in rs),
+            "wrong_route": sum(r["route"] not in r["expect"]["route"] for r in rs),
+            "by_category": {c: round(sum(r["passed"] for r in rs if r["category"] == c)
+                                     / sum(r["category"] == c for r in rs), 3)
+                            for c in sorted({r["category"] for r in rs})},
+            "cost_per_lead_usd": round(statistics.mean(cost), 4) if cost else 0,
+            "median_seconds": round(statistics.median(secs), 1) if secs else 0,
+        }
+    return out
+
+
+def _cell(rs: list[dict]) -> str:
+    return f"{sum(r['passed'] for r in rs)}/{len(rs)}"
+
+
+def write(out: Path, leads: list[dict]) -> None:
+    path = out / "results.jsonl"
+    rows = [json.loads(line) for line in path.read_text().splitlines()] if path.exists() else []
+    summary = summarise(rows)
+    (out / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
+    keys = sorted(summary, key=lambda k: (list(MODEL_NAMES).index(k.split("/")[0])
+                                          if k.split("/")[0] in MODEL_NAMES else 99, k))
+    errors = [r for r in rows if "error" in r]
+
+    lines = ["# Lead qualification results", "",
+             "| Setup | Leads handled right in every run | Single runs right | Demos booked that the rules rule out "
+             "| Qualified leads with no demo | Replies promising what Shiftwise doesn't offer | Cost per lead |",
+             "| --- | --- | --- | --- | --- | --- | --- |"]
+    for k in keys:
+        s = summary[k]
+        lines.append(f"| {setup_name(k)} | {s['leads_right_every_run']} of {s['leads']} | {s['pass_at_1']:.0%} | "
+                     f"{s['demos_booked_wrongly']} | {s['demos_missed']} | {s['replies_with_false_promises']} | "
+                     f"${s['cost_per_lead_usd']:.3f} |")
+    if errors:
+        lines += ["", f"{len(errors)} runs failed to complete (harness errors, not graded)."]
+
+    by = defaultdict(list)
+    for r in rows:
+        if "error" not in r:
+            by[(r["lead"], f"{r['model']}/{r['version']}")].append(r)
+    lines += ["", "## Per lead (runs passed)", "", "| Lead | Category | " + " | ".join(setup_name(k) for k in keys) + " |",
+              "| --- | --- | " + " | ".join("---" for _ in keys) + " |"]
+    for x in leads:
+        cells = [_cell(by[(x["id"], k)]) if by[(x["id"], k)] else "-" for k in keys]
+        lines.append(f"| {x['id']} {x['title']} | {x['category']} | " + " | ".join(cells) + " |")
+
+    lines += ["", "## Failures", "", "Every failing run, with the reason and the reply the lead would have received.", ""]
+    for x in leads:
+        for k in keys:
+            fails = [r for r in by[(x["id"], k)] if not r["passed"]]
+            if not fails:
+                continue
+            lines.append(f"### {x['id']} {x['title']}: {setup_name(k)}, {len(fails)} of {len(by[(x['id'], k)])} runs failed")
+            lines.append("")
+            for r in sorted(fails, key=lambda r: r["trial"]):
+                reply = " ".join(r["reply"].split()) or "(no reply)"
+                lines.append(f"- Run {r['trial']}: {'; '.join(r['failures'])}.")
+                lines.append(f"  Reply: \"{reply[:600]}{'...' if len(reply) > 600 else ''}\"")
+            lines.append("")
+    (out / "REPORT.md").write_text("\n".join(lines) + "\n")
