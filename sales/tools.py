@@ -139,7 +139,7 @@ class ToolsV2(_Base):
             route, why = "disqualify", f"Not a buyer: {not_a_buyer}."
         elif email_domain in FREE_MAIL:
             route, why = "review", "Personal email address, so the company can't be confirmed."
-        elif email_domain != site_domain:
+        elif email_domain != site_domain and not email_domain.endswith("." + site_domain):
             route, why = "review", f"Email domain {email_domain} doesn't match the website {site_domain}."
         elif not self.con.execute("SELECT 1 FROM pages WHERE domain=?", (site_domain,)).fetchone():
             route, why = "review", f"No page from {site_domain} could be read, so the company can't be checked."

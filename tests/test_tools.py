@@ -91,3 +91,20 @@ def test_v2_qualifies_once_and_replies_once_without_discounts(tmp_path):
     assert "discount" in call(t.send_reply, "We can do 20% off!")["error"]
     assert call(t.send_reply, "Try the free trial.")["ok"]
     assert "already sent" in call(t.send_reply, "Again")["error"]
+
+
+def test_v2_accepts_an_email_on_a_subdomain_of_the_website(tmp_path):
+    """Found by the held-out set (H13): corp.prairiefoods.example used to go to review. Fixed after that run."""
+    db = str(tmp_path / "crm.db")
+    store.create(db, {"name": "Karen Lund", "email": "k.lund@corp.prairiefoods.example", "company": "Prairie Foods",
+                      "website": "prairiefoods.example", "message": "Reviewing vendors."})
+    t = ToolsV2(db)
+    call(t.fetch_page, "prairiefoods.example")
+    out = call(t.qualify, "prairiefoods.example", 1400, "with 1,400 associates", "US", "Omaha, Nebraska", True)
+    assert out["route"] == "demo"
+    # a look-alike domain is still not a subdomain
+    db2 = str(tmp_path / "crm2.db")
+    store.create(db2, {"name": "X", "email": "x@evilprairiefoods.example", "website": "prairiefoods.example", "message": "."})
+    t2 = ToolsV2(db2)
+    call(t2.fetch_page, "prairiefoods.example")
+    assert call(t2.qualify, "prairiefoods.example", 1400, "with 1,400 associates", "US", "Omaha, Nebraska", True)["route"] == "review"
