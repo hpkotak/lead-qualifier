@@ -39,6 +39,8 @@ def test_each_check_can_fail(kw, reason):
     ("Shiftwise is fully HIPAA compliant.", True),
     ("We're happy to sign a BAA as part of the Business plan.", True),
     ("Start your 14-day free trial.", False),
+    ("I'd like you to get an accurate answer on how Shiftwise handles payroll, so I've passed it on.", False),
+    ("They can talk pricing, including your 30% request.", False),
 ])
 def test_promises_check_which_way_the_sentence_goes(sentence, bad):
     assert bool(promises(sentence)) == bad

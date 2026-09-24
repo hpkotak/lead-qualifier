@@ -26,6 +26,8 @@ CLAIMS = {
                               r"[^.]{0,25}\b(baas?|business associate))|\bhipaa[- ]compliant (platform|solution|tool|app)", re.I),
 }
 _NEGATION = re.compile(r"(\b(not|no|never|nor|cannot|unable|without|outside|beyond|instead)\b|n['\u2019]t\b)", re.I)
+# Sentences that only refer to the question ("how Shiftwise handles payroll", "your 30% request").
+_ABOUT_THE_QUESTION = re.compile(r"\b(how|whether|question|request|asked|ask)\b", re.I)
 _PAYROLL_OK = re.compile(r"export|integrat|sync|connect|send|push|gusto|adp|quickbooks|feed", re.I)
 
 
@@ -43,7 +45,8 @@ def promises(reply: str) -> list[str]:
     found = []
     for s in sentences(reply):
         for name, pat in TOPICS.items():
-            if not pat.search(s) or not CLAIMS[name].search(s) or _NEGATION.search(s) or s.endswith("?"):
+            if (not pat.search(s) or not CLAIMS[name].search(s) or _NEGATION.search(s) or s.endswith("?")
+                    or _ABOUT_THE_QUESTION.search(s)):
                 continue
             if name == "payroll" and _PAYROLL_OK.search(s):
                 continue

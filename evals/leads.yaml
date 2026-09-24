@@ -320,7 +320,7 @@
     website: brightcode.example
     job_title: Head of Delivery
     message: We need a tool to schedule our 120 consultants onto client projects and track utilization. Is Shiftwise a fit?
-  expect: {route: [disqualify, nurture], demo: false}
+  expect: {route: [disqualify, nurture, review], demo: false}
 
 # --- Can't be checked: a person reviews it -------------------------------------------------------
 - id: L19
