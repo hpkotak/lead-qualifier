@@ -40,6 +40,7 @@ def run_one(backend: str, model: str, version: str, lead: dict, trial: int, atte
             except (RunError, subprocess.TimeoutExpired, OSError) as e:
                 if attempt == attempts:
                     return {"error": redact(str(e))}
+                print(f"retrying {model} {version} {lead['id']} #{trial} after: {redact(str(e))[:200]}", flush=True)
                 time.sleep(30 * attempt)  # usually a rate limit; start again on a fresh database
                 continue
             con = store.connect(db)
