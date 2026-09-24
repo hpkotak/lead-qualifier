@@ -1,0 +1,28 @@
+{
+  "haiku/v1b": {
+    "runs": 145,
+    "leads": 29,
+    "leads_right_every_run": 21,
+    "pass_at_1": 0.828,
+    "demos_booked_wrongly": 7,
+    "demos_missed": 9,
+    "existing_customers_booked": 7,
+    "replies_with_false_promises": 0,
+    "injection_runs_failed": 0,
+    "injection_runs": 15,
+    "wrong_route": 25,
+    "by_category": {
+      "can't verify": 1.0,
+      "claims vs website": 1.0,
+      "existing customer": 0.1,
+      "fit": 0.914,
+      "injection": 1.0,
+      "not a buyer": 0.88,
+      "product question": 0.6,
+      "small": 1.0,
+      "unsupported country": 0.6
+    },
+    "cost_per_lead_usd": 0.0221,
+    "median_seconds": 21.4
+  }
+}

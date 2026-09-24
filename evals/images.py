@@ -96,13 +96,73 @@ def categories(summary: dict, path: Path):
     for i, c in enumerate(CATEGORIES):
         y = top + i * rh
         d.text((60, y + rh / 2), CATEGORY_NAMES[c], font=font(26), fill=INK, anchor="lm")
-        d.text((lw - 20, y + rh / 2), f"{counts[c]} leads", font=font(22), fill=MUTED, anchor="rm")
+        d.text((lw - 20, y + rh / 2), f"{counts[c]} lead{'s' if counts[c] != 1 else ''}", font=font(22), fill=MUTED, anchor="rm")
         for j, k in enumerate(keys):
             share = summary[k]["by_category"].get(c, 0)
             col = PASS if share >= 0.95 else WARN if share >= 0.8 else FAIL
             x = lw + j * cw
             d.rounded_rectangle((x + 10, y + 7, x + cw - 10, y + rh - 7), radius=10, fill=mix(BG, col, 0.35))
             d.text((x + cw / 2, y + rh / 2), f"{share:.0%}", font=font(26, "Bold"), fill=INK, anchor="mm")
+    img.save(path)
+
+
+def _wrap(d, text, fnt, width):
+    lines, line = [], ""
+    for word in text.split():
+        trial = f"{line} {word}".strip()
+        if d.textlength(trial, font=fnt) > width and line:
+            lines.append(line)
+            line = word
+        else:
+            line = trial
+    return lines + [line]
+
+
+def _card(d, box, title, body, colour, body_font=26):
+    x0, y0, x1, y1 = box
+    d.rounded_rectangle(box, radius=18, fill=mix(PANEL, colour, 0.08), outline=mix(PANEL, colour, 0.5), width=2)
+    d.text((x0 + 28, y0 + 24), title, font=font(24, "Semibold"), fill=colour)
+    y = y0 + 70
+    for para in body:
+        for ln in _wrap(d, para, font(body_font), x1 - x0 - 56):
+            d.text((x0 + 28, y), ln, font=font(body_font), fill=INK)
+            y += body_font + 12
+        y += 14
+
+
+def example(rows: list[dict], path: Path, lead_id: str = "L08"):
+    """One lead, side by side: what it said, what its website said, and what each version did."""
+    lead = next(x for x in LEADS if x["id"] == lead_id)
+    mine = [r for r in rows if r.get("lead") == lead_id and "error" not in r]
+
+    def count(model, version, pred):
+        rs = [r for r in mine if r["model"] == model and r["version"] == version]
+        return sum(pred(r) for r in rs), len(rs)
+
+    W, H = 1600, 900
+    img = Image.new("RGB", (W, H), BG)
+    d = ImageDraw.Draw(img)
+    d.text((60, 44), "One lead, two versions of the agent", font=font(44, "Bold"), fill=INK)
+    d.text((60, 104), f"{lead['lead']['company']} (fictional). Every run of every setup is in results/claude-code.",
+           font=font(24), fill=MUTED)
+    _card(d, (60, 170, 780, 470), "THE DEMO REQUEST", [f"\u201c{lead['lead']['message']}\u201d"], ACCENT)
+    _card(d, (820, 170, 1540, 470), "THEIR WEBSITE (ABOUT PAGE)",
+          ["\u201cOne shop, one family. Our 12 staff have fixed more bikes than we can count.\u201d"], ACCENT)
+    b1, n1 = count("haiku", "v1", lambda r: r["demo"])
+    b2, n2 = count("haiku", "v2", lambda r: r["demo"])
+    home = sum(r["demo"] and [c["tool"] for c in r["tool_calls"]].count("fetch_page") == 1
+               for r in mine if r["model"] == "haiku" and r["version"] == "v1")
+    q2 = sum(any(c["tool"] == "qualify" and "not found" in c["result"] for c in r["tool_calls"])
+             for r in mine if r["model"] == "haiku" and r["version"] == "v2")
+    _card(d, (60, 510, 780, 850), f"HAIKU, AS SHIPPED: DEMO BOOKED IN {b1} OF {n1} RUNS",
+          ["\u201cA 300-person retail operation across multiple locations sounds like exactly what Shiftwise was "
+           "built for. I've scheduled a demo with our team for this week.\u201d",
+           f"In {home} of those {b1} runs it read only the home page, which gives no headcount."], FAIL, 24)
+    _card(d, (820, 510, 1540, 850), f"HAIKU, AFTER FIXES: DEMO BOOKED IN {b2} OF {n2} RUNS",
+          ["The model has to quote the website for the headcount. Code checks the quote against the pages it "
+           f"fetched{f' (a quote from the message was rejected in {q2} runs)' if q2 else ''}, then routes: "
+           "12 staff, so the 14-day trial.",
+           "Existing customers, email domain, country and the demo booking are also decided in code."], PASS, 24)
     img.save(path)
 
 
@@ -114,6 +174,8 @@ def main(folder: str):
     summary = {k: s[k] for k in order if k in s}
     cover(summary, out / "cover.png")
     categories(summary, out / "categories.png")
+    if any(r.get("lead") == "L08" for r in rows):
+        example(rows, out / "example.png")
     print(f"wrote {out / 'cover.png'} and {out / 'categories.png'}")
 
 
