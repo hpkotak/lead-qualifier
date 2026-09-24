@@ -5,7 +5,7 @@ from collections import defaultdict
 from pathlib import Path
 
 MODEL_NAMES = {"haiku": "Haiku 4.5", "opus": "Opus 5.5", "sonnet": "Sonnet 5", "mock": "Mock agent"}
-VERSION_NAMES = {"v1": "as shipped", "v2": "after fixes"}
+VERSION_NAMES = {"v1": "as shipped", "v1b": "fixed prompt only", "v2": "after fixes"}
 
 
 def setup_name(key: str) -> str:

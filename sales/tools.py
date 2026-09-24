@@ -197,5 +197,8 @@ class ToolsV2(_Base):
         return self._log("send_reply", {"text": text}, {"ok": True, "message": "Reply sent."})
 
 
-VERSIONS = {"v1": ToolsV1, "v2": ToolsV2}
-TOOL_NAMES = {"v1": ["fetch_page", "book_demo", "save_lead"], "v2": ["fetch_page", "qualify", "send_reply"]}
+# v1b is the ablation: the v1 tools with the fixed prompt (prompts/v1b.md), to measure what the prompt
+# alone does without the checks in code.
+VERSIONS = {"v1": ToolsV1, "v1b": ToolsV1, "v2": ToolsV2}
+TOOL_NAMES = {"v1": ["fetch_page", "book_demo", "save_lead"], "v1b": ["fetch_page", "book_demo", "save_lead"],
+              "v2": ["fetch_page", "qualify", "send_reply"]}
