@@ -83,6 +83,11 @@ NEXT_STEPS = {
 _DISCOUNT = re.compile(r"\d\s?%|\bdiscount", re.I)
 
 
+def _has_number(quote: str, n: int) -> bool:
+    """The quote states n as a whole number: "600" matches "600 staff", not "6,000" or "1600"."""
+    return any(int(m.replace(",", "")) == n for m in re.findall(r"\d[\d,]*\d|\d", quote))
+
+
 def _norm(s: str) -> str:
     return " ".join(s.replace("’", "'").split()).lower()
 
@@ -151,7 +156,7 @@ class ToolsV2(_Base):
                         f"employees_quote was not found on any page you fetched from {site_domain}. Quote the website "
                         "exactly. Claims in the lead's message don't count. If the website doesn't state a headcount, "
                         "pass employees=null.")})
-                if f"{employees:,}" not in employees_quote and str(employees) not in employees_quote:
+                if not _has_number(employees_quote, employees):
                     return self._log("qualify", args, {"error": f"The quote doesn't contain the number {employees}."})
                 verified["employees"] = {"value": employees, "source": src}
             code = next((c for c, names in COUNTRY_CODES.items() if _norm(country).strip(". ") in names), country.strip())

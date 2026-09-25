@@ -108,3 +108,12 @@ def test_v2_accepts_an_email_on_a_subdomain_of_the_website(tmp_path):
     t2 = ToolsV2(db2)
     call(t2.fetch_page, "prairiefoods.example")
     assert call(t2.qualify, "prairiefoods.example", 1400, "with 1,400 associates", "US", "Omaha, Nebraska", True)["route"] == "review"
+
+
+def test_v2_number_must_be_the_whole_number_in_the_quote(tmp_path):
+    """Found in review, after the frozen runs: "60" used to match inside "600"."""
+    from sales.tools import _has_number
+    assert _has_number("with more than 600 team members", 600)
+    assert _has_number("1,400 associates", 1400) and _has_number("a crew of 4, fully insured", 4)
+    assert not _has_number("with more than 600 team members", 60)
+    assert not _has_number("45,000 associates", 450) and not _has_number("team of 120", 12)
