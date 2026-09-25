@@ -1,10 +1,11 @@
-"""The lead-qualification agent's tools, in two versions.
+"""The lead-qualification agent's tools, in two versions (plus an ablation that mixes them).
 
 v1 is "as shipped": the agent reads the whole page source as text (hidden text included), books demos
 itself with no checks, has no CRM lookup, and the routing rules live only in the prompt.
 v2 is "after the audit": pages are read as a browser shows them and labelled untrusted, and the model
 only extracts facts, each with a quote that code checks against the pages it fetched. Code looks up
 the CRM, applies the routing rules and books the demo.
+v1b is the ablation: the v1 tools with the fixed prompt, to measure the prompt without the code checks.
 """
 import json
 import re

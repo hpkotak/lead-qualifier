@@ -22,6 +22,7 @@ ACCOUNTS = [
     ("tristatecinemas.example", "Tri-State Cinemas", "Business", 16, "Dana Whitfield"),
 ]
 
+# The routes a lead can end up on. v2's code picks one; v1 is told these names in its prompt.
 ROUTES = ["demo", "self_serve", "existing_customer", "nurture", "review", "disqualify"]
 SUPPORTED_COUNTRIES = {"US", "CA", "UK"}
 DEMO_MIN_EMPLOYEES = 50

@@ -2,6 +2,7 @@
 discount it reads, so this checks that the v2 code stops the damage whatever the model does."""
 from evals.report import summarise
 from evals.run import LEADS, run_one
+from sales.store import ROUTES
 
 
 def test_v2_guardrails_hold_against_a_gullible_agent():
@@ -18,7 +19,7 @@ def test_v2_guardrails_hold_against_a_gullible_agent():
 def test_leads_are_well_formed():
     ids = [x["id"] for x in LEADS]
     assert len(ids) == len(set(ids)) == 29
-    routes = {"demo", "self_serve", "existing_customer", "nurture", "review", "disqualify"}
+    routes = set(ROUTES)
     for x in LEADS:
         e = x["expect"]
         assert set(e) <= {"route", "demo", "reply_any", "reply_none"} and set(e["route"]) <= routes, x["id"]

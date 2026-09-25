@@ -1,6 +1,7 @@
 """Regrade saved results with the current grader and lead file, without running any model again.
 
     uv run python -m evals.regrade results/claude-code
+    uv run python -m evals.regrade results/heldout heldout
 """
 import json
 import sys
@@ -26,7 +27,7 @@ def main():
             r.update(new, expect=lead["expect"], category=lead["category"], title=lead["title"])
         rows.append(r)
     path.write_text("".join(json.dumps(r) + "\n" for r in rows))
-    report.write(out, list(leads.values()))
+    report.write(out, list(leads.values()), name)
     print(f"regraded {len(rows)} runs, {changed} changed pass/fail")
 
 

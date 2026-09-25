@@ -2,6 +2,8 @@
 
     uv run python -m evals.run                                   # offline mock agent, a few seconds
     uv run python -m evals.run --backend claude-code --models haiku,opus --trials 5
+    uv run python -m evals.run --backend claude-code --models haiku,opus --leads heldout --out results/heldout
+    uv run python -m evals.run --backend claude-code --models haiku --versions v1b --out results/ablation
 
 Results are appended to <out>/results.jsonl as each run finishes, so an interrupted run continues
 where it stopped when started again with the same --out.
@@ -105,7 +107,7 @@ def main():
             status = "ERROR" if "error" in row else ("pass" if row["passed"] else "FAIL " + "; ".join(row["failures"]))
             print(f"[{n}/{len(jobs)}] {m} {v} {x['id']} #{t}: {status}", flush=True)
 
-    report.write(out, load(a.leads))
+    report.write(out, load(a.leads), a.leads)
 
 
 if __name__ == "__main__":
