@@ -41,7 +41,7 @@ def run_claude_code(message: str, version: str, model: str, db_path: str, workdi
     cmd = ["claude", "-p", message, "--model", model, "--system-prompt", system_prompt(version),
            "--tools", "", "--setting-sources", "", "--strict-mcp-config", "--mcp-config", str(mcp_path),
            "--allowedTools", ",".join(f"mcp__sales__{t}" for t in TOOL_NAMES[version]),
-           "--max-turns", "15", "--output-format", "json"]
+           "--max-turns", "15", "--output-format", "json", "--no-session-persistence"]
     proc = subprocess.run(cmd, cwd=SANDBOX, capture_output=True, text=True, timeout=600, stdin=subprocess.DEVNULL,
                           env={**os.environ, "ENABLE_TOOL_SEARCH": "false"})
     try:
