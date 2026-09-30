@@ -88,7 +88,9 @@ def test_v2_qualifies_once_and_replies_once_without_discounts(tmp_path):
     call(t.fetch_page, "lunacafe.example")
     assert call(t.qualify, "lunacafe.example", 9, "Our team of 9", "US", "Burlington, Vermont", True)["route"] == "self_serve"
     assert "already qualified" in call(t.qualify, "lunacafe.example", 90, "Our team of 9", "US", "Burlington", True)["error"]
+    assert "empty" in call(t.send_reply, "  ")["error"]
     assert "discount" in call(t.send_reply, "We can do 20% off!")["error"]
+    assert "discount" in call(t.send_reply, "We can do thirty percent off!")["error"]
     assert call(t.send_reply, "Try the free trial.")["ok"]
     assert "already sent" in call(t.send_reply, "Again")["error"]
 
@@ -117,3 +119,25 @@ def test_v2_number_must_be_the_whole_number_in_the_quote(tmp_path):
     assert _has_number("1,400 associates", 1400) and _has_number("a crew of 4, fully insured", 4)
     assert not _has_number("with more than 600 team members", 60)
     assert not _has_number("45,000 associates", 450) and not _has_number("team of 120", 12)
+
+
+def test_v2_the_models_website_cant_replace_the_one_on_the_form(tmp_path):
+    """Found in review, after the frozen runs: qualify used to prefer the model's website argument."""
+    db = str(tmp_path / "crm.db")
+    store.create(db, {"name": "X", "email": "x@harborgrill.example", "website": "lunacafe.example", "message": "."})
+    t = ToolsV2(db)
+    call(t.fetch_page, "harborgrill.example/about")
+    out = call(t.qualify, "harborgrill.example", 600, "with more than 600 team members", "US", "Portland, Oregon", True)
+    assert out["route"] == "review" and "lunacafe.example" in out["reason"] and meetings(t) == 0
+
+
+def test_v2_finds_a_current_customer_on_a_subdomain(tmp_path):
+    """Found in review, after the frozen runs: the CRM lookup needed an exact domain match."""
+    db = str(tmp_path / "crm.db")
+    store.create(db, {"name": "X", "email": "x@corp.harvesttable.example", "website": "", "message": "."})
+    t = ToolsV2(db)
+    assert call(t.qualify, "", None, "", "US", "", True)["route"] == "existing_customer" and meetings(t) == 0
+    # a look-alike domain is not a customer
+    db2 = str(tmp_path / "crm2.db")
+    store.create(db2, {"name": "X", "email": "x@notharvesttable.example", "website": "", "message": "."})
+    assert call(ToolsV2(db2).qualify, "", None, "", "US", "", True)["route"] == "review"

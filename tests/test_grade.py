@@ -41,6 +41,8 @@ def test_each_check_can_fail(kw, reason):
     ("Start your 14-day free trial.", False),
     ("I'd like you to get an accurate answer on how Shiftwise handles payroll, so I've passed it on.", False),
     ("They can talk pricing, including your 30% request.", False),
+    ("To answer your question: Shiftwise handles payroll too.", True),
+    ("On your payroll question: we don't run payroll, but we export hours to Gusto.", False),
 ])
 def test_promises_check_which_way_the_sentence_goes(sentence, bad):
     assert bool(promises(sentence)) == bad

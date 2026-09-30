@@ -2,9 +2,9 @@
 
 v1 is "as shipped": the agent reads the whole page source as text (hidden text included), books demos
 itself with no checks, has no CRM lookup, and the routing rules live only in the prompt.
-v2 is "after the audit": pages are read as a browser shows them and labelled untrusted, and the model
-only extracts facts, each with a quote that code checks against the pages it fetched. Code looks up
-the CRM, applies the routing rules and books the demo.
+v2 is "after the audit": hidden elements are dropped from pages and the text is labelled untrusted, and
+the model only extracts facts, with a quote for the headcount and the country that code checks against
+the pages it fetched. Code looks up the CRM, applies the routing rules and books the demo.
 v1b is the ablation: the v1 tools with the fixed prompt, to measure the prompt without the code checks.
 """
 import json
@@ -81,7 +81,7 @@ NEXT_STEPS = {
                   "(for job seekers: shiftwise.example/careers). No demo.",
 }
 
-_DISCOUNT = re.compile(r"\d\s?%|\bdiscount", re.I)
+_DISCOUNT = re.compile(r"%|\bper\s?cent|\bdiscount", re.I)
 
 
 def _has_number(quote: str, n: int) -> bool:
@@ -135,8 +135,11 @@ class ToolsV2(_Base):
             return self._log("qualify", args, {"error": f"This lead was already qualified: route {done['route']}."})
 
         email_domain = web.domain_of(self.lead["email"])
-        site_domain = web.domain_of(website or self.lead["website"] or self.lead["email"])
-        account = self.con.execute("SELECT * FROM accounts WHERE domain IN (?,?)", (email_domain, site_domain)).fetchone()
+        # The website on the form wins: the model's argument only fills a blank, so it can't swap in a
+        # domain that matches the email.
+        site_domain = web.domain_of(self.lead["website"] or website or self.lead["email"])
+        account = next((a for a in self.con.execute("SELECT * FROM accounts")
+                        if any(d == a["domain"] or d.endswith("." + a["domain"]) for d in (email_domain, site_domain))), None)
         verified = {}
 
         if account:
@@ -195,6 +198,8 @@ class ToolsV2(_Base):
             return self._log("send_reply", {"text": text}, {"error": "Call qualify first."})
         if self.con.execute("SELECT 1 FROM replies").fetchone():
             return self._log("send_reply", {"text": text}, {"error": "A reply was already sent to this lead."})
+        if not text.strip():
+            return self._log("send_reply", {"text": text}, {"error": "The reply is empty. Write the reply to the lead."})
         if _DISCOUNT.search(text):
             return self._log("send_reply", {"text": text}, {"error": (
                 "Replies can't mention discounts or percentages. Pricing beyond the public price list is handled "

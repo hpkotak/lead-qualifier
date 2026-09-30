@@ -1,5 +1,8 @@
 {
   "haiku/v1b": {
+    "model_ids": [
+      "claude-haiku-4-5-20251001"
+    ],
     "runs": 145,
     "leads": 29,
     "leads_right_every_run": 21,

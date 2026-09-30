@@ -12,7 +12,8 @@ WEB = Path(__file__).resolve().parent.parent / "web"
 
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"}
 SKIP = {"script", "style", "head"}
-_HIDDEN_STYLE = re.compile(r"display\s*:\s*none|visibility\s*:\s*hidden|font-size\s*:\s*0", re.I)
+# font-size: 0, 0px or 0.0em hides text; 0.8em doesn't.
+_HIDDEN_STYLE = re.compile(r"display\s*:\s*none|visibility\s*:\s*hidden|font-size\s*:\s*0(?:\.0*)?(?![\d.])", re.I)
 
 
 def domain_of(url_or_email: str) -> str:
@@ -31,7 +32,9 @@ def page_name(url: str) -> str:
 
 
 class _Text(HTMLParser):
-    """Collects page text and links. With visible_only, text a browser wouldn't show is dropped."""
+    """Collects page text and links. With visible_only, elements hidden in their own tag are dropped: the
+    hidden attribute, aria-hidden="true", or an inline style of display:none, visibility:hidden or
+    font-size:0. Text hidden by a stylesheet class is not detected."""
 
     def __init__(self, visible_only: bool):
         super().__init__(convert_charrefs=True)

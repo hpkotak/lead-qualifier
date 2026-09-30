@@ -1,4 +1,4 @@
-"""Renders the README images from a results folder: cover.png and categories.png.
+"""Renders the README images from a results folder: cover.png, categories.png and example.png.
 
     uv run --with pillow python -m evals.images results/claude-code
 """
@@ -42,7 +42,7 @@ def mix(a, b, t):
 
 def label(key):
     m, v = key.split("/")
-    return f"{MODEL_NAMES.get(m, m).split()[0]} {'as shipped' if v == 'v1' else 'after fixes'}"
+    return f"{MODEL_NAMES.get(m, m)} {'as shipped' if v == 'v1' else 'after fixes'}"
 
 
 def cover(summary: dict, path: Path):
@@ -154,11 +154,11 @@ def example(rows: list[dict], path: Path, lead_id: str = "L08"):
                for r in mine if r["model"] == "haiku" and r["version"] == "v1")
     q2 = sum(any(c["tool"] == "qualify" and "not found" in c["result"] for c in r["tool_calls"])
              for r in mine if r["model"] == "haiku" and r["version"] == "v2")
-    _card(d, (60, 510, 780, 850), f"HAIKU, AS SHIPPED: DEMO BOOKED IN {b1} OF {n1} RUNS",
+    _card(d, (60, 510, 780, 850), f"{MODEL_NAMES['haiku'].upper()}, AS SHIPPED: DEMO BOOKED IN {b1} OF {n1} RUNS",
           ["\u201cA 300-person retail operation across multiple locations sounds like exactly what Shiftwise was "
            "built for. I've scheduled a demo with our team for this week.\u201d",
            f"In {home} of those {b1} runs it read only the home page, which gives no headcount."], FAIL, 24)
-    _card(d, (820, 510, 1540, 850), f"HAIKU, AFTER FIXES: DEMO BOOKED IN {b2} OF {n2} RUNS",
+    _card(d, (820, 510, 1540, 850), f"{MODEL_NAMES['haiku'].upper()}, AFTER FIXES: DEMO BOOKED IN {b2} OF {n2} RUNS",
           ["The model has to quote the website for the headcount. Code checks the quote against the pages it "
            f"fetched{f' (a quote from the message was rejected in {q2} runs)' if q2 else ''}, then routes: "
            "12 staff, so the 14-day trial.",

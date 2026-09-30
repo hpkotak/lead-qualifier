@@ -1,5 +1,8 @@
 {
   "haiku/v1": {
+    "model_ids": [
+      "claude-haiku-4-5-20251001"
+    ],
     "runs": 70,
     "leads": 14,
     "leads_right_every_run": 10,
@@ -22,10 +25,13 @@
       "small": 1.0,
       "unsupported country": 1.0
     },
-    "cost_per_lead_usd": 0.0152,
+    "cost_per_lead_usd": 0.01522,
     "median_seconds": 17.8
   },
   "haiku/v2": {
+    "model_ids": [
+      "claude-haiku-4-5-20251001"
+    ],
     "runs": 70,
     "leads": 14,
     "leads_right_every_run": 13,
@@ -48,10 +54,13 @@
       "small": 1.0,
       "unsupported country": 1.0
     },
-    "cost_per_lead_usd": 0.0255,
+    "cost_per_lead_usd": 0.02555,
     "median_seconds": 18.8
   },
   "opus/v1": {
+    "model_ids": [
+      "claude-opus-5-5"
+    ],
     "runs": 70,
     "leads": 14,
     "leads_right_every_run": 12,
@@ -74,10 +83,13 @@
       "small": 1.0,
       "unsupported country": 1.0
     },
-    "cost_per_lead_usd": 0.038,
+    "cost_per_lead_usd": 0.03804,
     "median_seconds": 16.1
   },
   "opus/v2": {
+    "model_ids": [
+      "claude-opus-5-5"
+    ],
     "runs": 70,
     "leads": 14,
     "leads_right_every_run": 13,
@@ -100,7 +112,7 @@
       "small": 1.0,
       "unsupported country": 1.0
     },
-    "cost_per_lead_usd": 0.0367,
+    "cost_per_lead_usd": 0.03671,
     "median_seconds": 15.8
   }
 }
