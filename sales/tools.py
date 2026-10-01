@@ -81,7 +81,7 @@ NEXT_STEPS = {
                   "(for job seekers: shiftwise.example/careers). No demo.",
 }
 
-_DISCOUNT = re.compile(r"%|\bper\s?cent|\bdiscount", re.I)
+_DISCOUNT = re.compile(r"%|\b(?:per\s*cent|percentages?)\b|\bdiscount", re.I)
 
 
 def _has_number(quote: str, n: int) -> bool:
@@ -135,9 +135,12 @@ class ToolsV2(_Base):
             return self._log("qualify", args, {"error": f"This lead was already qualified: route {done['route']}."})
 
         email_domain = web.domain_of(self.lead["email"])
-        # The website on the form wins: the model's argument only fills a blank, so it can't swap in a
-        # domain that matches the email.
-        site_domain = web.domain_of(self.lead["website"] or website or self.lead["email"])
+        # The website on the form wins. A blank can use the model's website only if the email matches.
+        site_domain = web.domain_of(self.lead["website"])
+        if not self.lead["website"].strip():
+            site_domain = web.domain_of(website)
+            if not site_domain or (email_domain != site_domain and not email_domain.endswith("." + site_domain)):
+                site_domain = email_domain
         account = next((a for a in self.con.execute("SELECT * FROM accounts")
                         if any(d == a["domain"] or d.endswith("." + a["domain"]) for d in (email_domain, site_domain))), None)
         verified = {}
@@ -198,7 +201,7 @@ class ToolsV2(_Base):
             return self._log("send_reply", {"text": text}, {"error": "Call qualify first."})
         if self.con.execute("SELECT 1 FROM replies").fetchone():
             return self._log("send_reply", {"text": text}, {"error": "A reply was already sent to this lead."})
-        if not text.strip():
+        if not re.sub(r"[\s\u200b\u200c\u200d\ufeff]", "", text):
             return self._log("send_reply", {"text": text}, {"error": "The reply is empty. Write the reply to the lead."})
         if _DISCOUNT.search(text):
             return self._log("send_reply", {"text": text}, {"error": (

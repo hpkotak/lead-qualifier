@@ -1,6 +1,6 @@
 """Renders the README images from a results folder: cover.png, categories.png and example.png.
 
-    uv run --with pillow python -m evals.images results/claude-code
+    uv run python -m evals.images results/claude-code
 """
 import json
 import sys
@@ -152,7 +152,7 @@ def example(rows: list[dict], path: Path, lead_id: str = "L08"):
     b2, n2 = count("haiku", "v2", lambda r: r["demo"])
     home = sum(r["demo"] and [c["tool"] for c in r["tool_calls"]].count("fetch_page") == 1
                for r in mine if r["model"] == "haiku" and r["version"] == "v1")
-    q2 = sum(any(c["tool"] == "qualify" and "not found" in c["result"] for c in r["tool_calls"])
+    q2 = sum(any(c["tool"] == "qualify" and "employees_quote was not found" in c["result"] for c in r["tool_calls"])
              for r in mine if r["model"] == "haiku" and r["version"] == "v2")
     _card(d, (60, 510, 780, 850), f"{MODEL_NAMES['haiku'].upper()}, AS SHIPPED: DEMO BOOKED IN {b1} OF {n1} RUNS",
           ["\u201cA 300-person retail operation across multiple locations sounds like exactly what Shiftwise was "
@@ -160,7 +160,7 @@ def example(rows: list[dict], path: Path, lead_id: str = "L08"):
            f"In {home} of those {b1} runs it read only the home page, which gives no headcount."], FAIL, 24)
     _card(d, (820, 510, 1540, 850), f"{MODEL_NAMES['haiku'].upper()}, AFTER FIXES: DEMO BOOKED IN {b2} OF {n2} RUNS",
           ["The model has to quote the website for the headcount. Code checks the quote against the pages it "
-           f"fetched{f' (a quote from the message was rejected in {q2} runs)' if q2 else ''}, then routes: "
+           f"fetched{f' (a headcount quote was rejected in {q2} runs)' if q2 else ''}, then routes: "
            "12 staff, so the 14-day trial.",
            "Existing customers, email domain, country and the demo booking are also decided in code."], PASS, 24)
     img.save(path)

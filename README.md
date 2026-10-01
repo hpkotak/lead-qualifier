@@ -105,12 +105,17 @@ The fixed version ([`sales/tools.py`](sales/tools.py), [`prompts/v2.md`](prompts
    or percentages.
 
 **Changed after the runs.** The published numbers come from the code as it was when each set was run.
-Since then the fixed version has had six small fixes, each with a test: emails on a subdomain of
+Since then the fixed version has had small fixes, each with a test: emails on a subdomain of
 the website are accepted (found by the held-out set), a headcount must match a whole number in its
 quote, and four from a later code review: the website on the form now beats the one the model
 passes, the CRM lookup matches subdomains, the reply check also catches "percent" and empty replies,
-and a font size like `0.8em` is no longer read as hidden. None of them changes the prompt or the
-tool descriptions the model sees, and the as-shipped tools are untouched.
+and a font size like `0.8em` is no longer read as hidden. Further review restricted the model's website
+argument on blank forms to a domain matching the email (subdomains count, and whitespace-only fields
+are blank); otherwise the email domain is used. The reply check now catches "per cent" with any
+whitespace and "percentage(s)", allows "percentile", and rejects replies made only of whitespace and
+zero-width characters. The example image now counts only rejected headcount quotes and omits the
+clause when there are none. These follow-up changes changed no grade. None of them changes the prompt
+or the tool descriptions the model sees, and the as-shipped tools are untouched.
 [`evals/replay.py`](evals/replay.py) replays the saved tool calls through the current code: in all
 290 main runs every tool result comes back exactly as saved, so those runs are what the current code
 would have produced. On the held-out set only the 10 subdomain runs differ, and those were rerun
@@ -244,7 +249,7 @@ uv run python -m evals.regrade results/claude-code          # regrade saved runs
 uv run python -m evals.regrade results/heldout heldout
 uv run python -m evals.replay results/claude-code           # saved v2 tool calls through the current code
 uv run python -m evals.replay results/heldout heldout
-uv run --with pillow python -m evals.images results/claude-code   # redraw the images
+uv run python -m evals.images results/claude-code           # redraw the images
 ```
 
 `haiku` and `opus` are Claude Code aliases for the latest model of each kind. When these results were

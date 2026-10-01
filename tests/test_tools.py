@@ -95,15 +95,16 @@ def test_v2_qualifies_once_and_replies_once_without_discounts(tmp_path):
     assert "already sent" in call(t.send_reply, "Again")["error"]
 
 
-def test_v2_accepts_an_email_on_a_subdomain_of_the_website(tmp_path):
+@pytest.mark.parametrize("website", ["prairiefoods.example", "", " \t\n"])
+def test_v2_accepts_an_email_on_a_subdomain_of_the_website(tmp_path, website):
     """Found by the held-out set (H13): corp.prairiefoods.example used to go to review. Fixed after that run."""
     db = str(tmp_path / "crm.db")
     store.create(db, {"name": "Karen Lund", "email": "k.lund@corp.prairiefoods.example", "company": "Prairie Foods",
-                      "website": "prairiefoods.example", "message": "Reviewing vendors."})
+                      "website": website, "message": "Reviewing vendors."})
     t = ToolsV2(db)
     call(t.fetch_page, "prairiefoods.example")
     out = call(t.qualify, "prairiefoods.example", 1400, "with 1,400 associates", "US", "Omaha, Nebraska", True)
-    assert out["route"] == "demo"
+    assert out["route"] == "demo" and meetings(t) == 1
     # a look-alike domain is still not a subdomain
     db2 = str(tmp_path / "crm2.db")
     store.create(db2, {"name": "X", "email": "x@evilprairiefoods.example", "website": "prairiefoods.example", "message": "."})
@@ -129,6 +130,45 @@ def test_v2_the_models_website_cant_replace_the_one_on_the_form(tmp_path):
     call(t.fetch_page, "harborgrill.example/about")
     out = call(t.qualify, "harborgrill.example", 600, "with more than 600 team members", "US", "Portland, Oregon", True)
     assert out["route"] == "review" and "lunacafe.example" in out["reason"] and meetings(t) == 0
+
+
+@pytest.mark.parametrize("website", ["", " \t\n"])
+@pytest.mark.parametrize("site", ["harvesttable.example", "corp.harvesttable.example", "evilharborgrill.example",
+                                 "harborgrill.example", ""])
+def test_v2_blank_form_website_uses_only_a_domain_matching_the_email(tmp_path, website, site):
+    db = str(tmp_path / "crm.db")
+    store.create(db, {"name": "X", "email": "x@harborgrill.example", "website": website, "message": "."})
+    t = ToolsV2(db)
+    call(t.fetch_page, "harborgrill.example/about")
+    out = call(t.qualify, site, 600, "with more than 600 team members", "US", "Portland, Oregon", True)
+    assert out["route"] == "demo" and meetings(t) == 1
+
+
+@pytest.mark.parametrize("text, error", [
+    ("We can do thirty percent off!", "discount"),
+    ("We can do thirty per cent off!", "discount"),
+    ("We can do thirty per  cent off!", "discount"),
+    ("We can do thirty per\t\ncent off!", "discount"),
+    ("Ask about the percentage.", "discount"),
+    ("Ask about PERCENTAGES.", "discount"),
+    ("We can do 20% off!", "discount"),
+    ("Ask about a discount.", "discount"),
+    ("", "empty"), (" \t\n", "empty"),
+    ("\u200b", "empty"), ("\u200c", "empty"), ("\u200d", "empty"), ("\ufeff", "empty"),
+    (" \u200b\t\u200c\n\u200d\ufeff ", "empty"),
+    ("Your team is in the top percentile.", ""),
+    ("\u200bThank you.\ufeff", ""),
+])
+def test_v2_reply_filter(tmp_path, text, error):
+    t = tools(tmp_path, "L21")
+    call(t.qualify, "", None, "", "US", "", True)
+    out = call(t.send_reply, text)
+    if error:
+        assert error in out["error"]
+        assert t.con.execute("SELECT COUNT(*) FROM replies").fetchone()[0] == 0
+    else:
+        assert out["ok"]
+        assert t.con.execute("SELECT text FROM replies").fetchone()[0] == text
 
 
 def test_v2_finds_a_current_customer_on_a_subdomain(tmp_path):
