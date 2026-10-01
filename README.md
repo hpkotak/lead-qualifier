@@ -91,8 +91,9 @@ contact address (`sales@shiftwise.example`) that doesn't exist (see [limits](#li
 The fixed version ([`sales/tools.py`](sales/tools.py), [`prompts/v2.md`](prompts/v2.md)):
 
 1. **The model reports facts; code decides.** `qualify` takes the headcount and the country, each with
-   an exact quote, and a yes or no on fit (hourly shift staff). Code checks that each quote is on a
-   page the agent fetched from the company's website, then applies the rules in order: current
+   an exact quote from the website or no quote when the site doesn't say (the lead then can't get a
+   demo or the trial), and a yes or no on fit (hourly shift staff). Code checks that each quote given
+   is on a page the agent fetched from the company's website, then applies the rules in order: current
    customer, not a buyer, personal or mismatched email, unreadable website, country, fit, headcount.
 2. **CRM lookup** by email and website domain, before any other rule.
 3. **Demos are booked by code**, only on the demo route. A lead can be qualified once: the model can
